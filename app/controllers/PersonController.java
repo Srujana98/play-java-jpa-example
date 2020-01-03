@@ -1,8 +1,10 @@
 package controllers;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import models.Person;
 import models.PersonRepository;
 import play.data.FormFactory;
+import play.libs.Json;
 import play.libs.concurrent.HttpExecutionContext;
 import play.mvc.Controller;
 import play.mvc.Result;
@@ -12,7 +14,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
 
 import static play.libs.Json.toJson;
-
+import play.libs.Json;
 /**
  * The controller keeps all database operations behind the repository, and uses
  * {@link play.libs.concurrent.HttpExecutionContext} to provide access to the
@@ -30,15 +32,19 @@ public class PersonController extends Controller {
         this.personRepository = personRepository;
         this.ec = ec;
     }
-
     public Result index() {
         return ok(views.html.index.render());
     }
 
     public CompletionStage<Result> addPerson() {
-        Person person = formFactory.form(Person.class).bindFromRequest().get();
+        //JsonNode json=request().body().asJson();
+        //String name=json.get("name").asText();
+        //Person person = new Person();
+        //person.setName(name);
+        Person person=Json.fromJson(request().body().asJson(),Person.class);
         return personRepository.add(person).thenApplyAsync(p -> {
-            return redirect(routes.PersonController.index());
+            //return redirect(routes.PersonController.index());
+            return ok("inserted:");
         }, ec.current());
     }
 
@@ -47,5 +53,17 @@ public class PersonController extends Controller {
             return ok(toJson(personStream.collect(Collectors.toList())));
         }, ec.current());
     }
+    public CompletionStage<Result> deletePerson()
+    {
+        JsonNode json=request().body().asJson();
+        String name=json.get("name").asText();
+        //Person person = new Person();
+        //Person person=formFactory.form(Person.class).bindFormRequest().get();
+        return personRepository.del(name).thenApplyAsync(p->{
+               return ok("deleted:"+name);
+            //return
+        },ec.current());
+    }
+
 
 }
